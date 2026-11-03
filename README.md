@@ -202,7 +202,9 @@ During your viva or class presentation, use MongoDB Compass alongside the web ap
 
 ## 🌐 Online Deployment Guide (Render)
 
-This project includes production configuration (`render.yaml`, `Procfile`, and `gunicorn`) to deploy live on [Render](https://render.com):
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/pullrd/Turf-Booking-System)
+
+This project is pre-configured for one-click hosting on [Render](https://render.com) using [`render.yaml`](file:///render.yaml), [`Procfile`](file:///Procfile), and [`gunicorn`](file:///requirements.txt):
 
 1. **Push Repository to GitHub**:
    Ensure your code is pushed to your GitHub repository `https://github.com/pullrd/Turf-Booking-System`.
