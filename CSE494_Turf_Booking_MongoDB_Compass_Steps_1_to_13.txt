@@ -1,0 +1,505 @@
+CSE494 - INTELLIGENT NOSQL DATABASES
+TURF BOOKING MANAGEMENT SYSTEM
+MONGODB COMPASS / MONGOSH PRACTICAL COMMANDS
+
+HOW TO USE THIS FILE
+1. Open MongoDB Compass.
+2. Connect to your existing MongoDB Atlas cluster.
+3. Open a mongosh tab in Compass.
+4. Copy and run one step at a time, in order.
+5. Check the output after each step before continuing.
+6. In the Compass left panel, refresh the connection and expand turf_booking_db to view users, turfs and bookings.
+
+IMPORTANT NOTES
+- These commands create sample demonstration records in the database named turf_booking_db.
+- Use the same Atlas cluster and database URI as the Flask website if you want website-created records to appear in Compass.
+- The sample booking records use actual ObjectId references fetched from the users and turfs collections.
+- The upsert option prevents duplicate sample records with the same email, turf name or demoCode when you run the setup again.
+- Do not run dropDatabase(), deleteMany({}) or drop a collection in your actual application database.
+- If the website has already created data, inspect the collection fields first and keep the field names consistent with the application's code.
+
+STEP 1 - SELECT THE DATABASE AND CHECK THE CONNECTION
+
+use("turf_booking_db")
+
+db.runCommand({ ping: 1 })
+
+Explanation:
+use() selects the database. MongoDB creates the database physically when data is first stored. ping checks whether the server is responding.
+
+
+STEP 2 - CREATE THE THREE COLLECTIONS
+
+var collections = db.getCollectionNames()
+
+if (!collections.includes("users")) {
+    db.createCollection("users")
+}
+
+if (!collections.includes("turfs")) {
+    db.createCollection("turfs")
+}
+
+if (!collections.includes("bookings")) {
+    db.createCollection("bookings")
+}
+
+db.getCollectionNames()
+
+Explanation:
+A collection stores documents of a similar purpose. This creates users, turfs and bookings only when they do not already exist.
+
+
+STEP 3 - INSERT SAMPLE USERS
+
+db.users.updateOne(
+    { email: "rahul@example.com" },
+    {
+        $set: {
+            name: "Rahul Sharma",
+            email: "rahul@example.com",
+            role: "user",
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.users.updateOne(
+    { email: "admin@example.com" },
+    {
+        $set: {
+            name: "Turf Admin",
+            email: "admin@example.com",
+            role: "admin",
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.users.find()
+
+Explanation:
+updateOne updates a matching document. $set sets the specified fields. upsert:true inserts a document if no matching email exists. find() displays the users.
+
+
+STEP 4 - INSERT SAMPLE TURFS
+
+var adminUser = db.users.findOne({
+    email: "admin@example.com"
+})
+
+db.turfs.updateOne(
+    { name: "Green Arena" },
+    {
+        $set: {
+            name: "Green Arena",
+            city: "Phagwara",
+            sportType: "Football",
+            amenities: ["Parking", "Washroom"],
+            hourlyRate: 1200,
+            isActive: true,
+            ownerId: adminUser._id,
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.turfs.updateOne(
+    { name: "City Cricket Ground" },
+    {
+        $set: {
+            name: "City Cricket Ground",
+            city: "Phagwara",
+            sportType: "Cricket",
+            amenities: ["Parking"],
+            hourlyRate: 1500,
+            isActive: true,
+            ownerId: adminUser._id,
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.turfs.updateOne(
+    { name: "Indoor Sports Hub" },
+    {
+        $set: {
+            name: "Indoor Sports Hub",
+            city: "Jalandhar",
+            sportType: "Badminton",
+            amenities: ["Changing Room", "Parking"],
+            hourlyRate: 800,
+            isActive: true,
+            ownerId: adminUser._id,
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.turfs.find()
+
+Explanation:
+Each turf is one document. amenities is an array (embedded data). ownerId stores the admin user's _id as a reference.
+
+
+STEP 5 - INSERT SAMPLE BOOKINGS
+
+var demoUser = db.users.findOne({
+    email: "rahul@example.com"
+})
+
+var footballTurf = db.turfs.findOne({
+    name: "Green Arena"
+})
+
+var cricketTurf = db.turfs.findOne({
+    name: "City Cricket Ground"
+})
+
+db.bookings.updateOne(
+    { demoCode: "BK-1001" },
+    {
+        $set: {
+            demoCode: "BK-1001",
+            userId: demoUser._id,
+            turfId: footballTurf._id,
+            bookingDate: new Date("2026-11-10"),
+            startTime: "18:00",
+            endTime: "19:00",
+            amount: 1200,
+            status: "confirmed",
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.bookings.updateOne(
+    { demoCode: "BK-1002" },
+    {
+        $set: {
+            demoCode: "BK-1002",
+            userId: demoUser._id,
+            turfId: cricketTurf._id,
+            bookingDate: new Date("2026-11-11"),
+            startTime: "17:00",
+            endTime: "18:00",
+            amount: 1500,
+            status: "pending",
+            createdAt: new Date()
+        }
+    },
+    { upsert: true }
+)
+
+db.bookings.find()
+
+Explanation:
+A booking stores userId and turfId. These values are copied from the _id fields of the matching user and turf documents. This is referencing.
+
+
+STEP 6 - CHECK ALL COLLECTIONS AND DOCUMENT COUNTS
+
+db.users.find()
+db.turfs.find()
+db.bookings.find()
+
+db.users.countDocuments({})
+db.turfs.countDocuments({})
+db.bookings.countDocuments({})
+
+Explanation:
+find() displays documents. countDocuments({}) returns the number of documents in a collection.
+
+
+STEP 7 - DEMONSTRATE CRUD OPERATIONS
+
+A. CREATE - Insert one temporary turf
+
+db.turfs.insertOne({
+    name: "TEMP-DEMO-ONLY",
+    city: "Phagwara",
+    sportType: "Football",
+    amenities: ["Parking"],
+    hourlyRate: 900,
+    isActive: false,
+    demoRecord: true
+})
+
+B. READ - Find active turfs
+
+db.turfs.find({
+    isActive: true
+})
+
+C. UPDATE - Change Green Arena's hourly rate
+
+db.turfs.updateOne(
+    { name: "Green Arena" },
+    {
+        $set: {
+            hourlyRate: 1300
+        }
+    }
+)
+
+Check the update:
+
+db.turfs.findOne({
+    name: "Green Arena"
+})
+
+D. DELETE - Delete only the temporary test turf
+
+db.turfs.deleteOne({
+    name: "TEMP-DEMO-ONLY",
+    demoRecord: true
+})
+
+Explanation:
+CRUD means Create, Read, Update and Delete. insertOne creates one document, find reads documents, updateOne changes a matching document, and deleteOne removes one matching document.
+
+
+STEP 8 - FILTERING AND COMPARISON / LOGICAL OPERATORS
+
+A. Find Football turfs costing less than 1500
+
+db.turfs.find({
+    sportType: "Football",
+    hourlyRate: { $lt: 1500 }
+})
+
+B. Find Football or Cricket turfs using $in
+
+db.turfs.find({
+    sportType: {
+        $in: ["Football", "Cricket"]
+    }
+})
+
+C. Find documents matching at least one condition using $or
+
+db.turfs.find({
+    $or: [
+        { isActive: false },
+        { hourlyRate: { $lt: 1000 } }
+    ]
+})
+
+Explanation:
+$lt means less than. $in matches any value in the given list. $or returns documents where at least one condition is true. Multiple ordinary fields in the same filter are combined using AND by default.
+
+
+STEP 9 - PROJECTION, SORTING AND LIMIT
+
+A. Display only name, sport type and hourly rate
+
+db.turfs.find(
+    {},
+    {
+        _id: 0,
+        name: 1,
+        sportType: 1,
+        hourlyRate: 1
+    }
+)
+
+B. Sort by price in ascending order (low to high)
+
+db.turfs.find().sort({
+    hourlyRate: 1
+})
+
+C. Sort by price in descending order (high to low)
+
+db.turfs.find().sort({
+    hourlyRate: -1
+})
+
+D. Display only two documents
+
+db.turfs.find().limit(2)
+
+Explanation:
+Projection selects which fields to display. 1 includes a field and 0 excludes it. _id is excluded explicitly here. sort(1) is ascending, sort(-1) is descending. limit(2) returns at most two documents.
+
+
+STEP 10 - UPDATE A BOOKING STATUS
+
+Change booking BK-1002 from pending to confirmed:
+
+db.bookings.updateOne(
+    { demoCode: "BK-1002" },
+    {
+        $set: {
+            status: "confirmed"
+        }
+    }
+)
+
+Check the updated booking:
+
+db.bookings.find({
+    demoCode: "BK-1002"
+})
+
+Explanation:
+The filter identifies the booking. $set changes only the status field and leaves the other booking details unchanged.
+
+
+STEP 11 - AGGREGATION
+
+A. Count bookings by status
+
+db.bookings.aggregate([
+    {
+        $group: {
+            _id: "$status",
+            totalBookings: {
+                $sum: 1
+            }
+        }
+    },
+    {
+        $sort: {
+            totalBookings: -1
+        }
+    }
+])
+
+B. Count bookings by turf
+
+db.bookings.aggregate([
+    {
+        $group: {
+            _id: "$turfId",
+            totalBookings: {
+                $sum: 1
+            }
+        }
+    }
+])
+
+Explanation:
+aggregate() processes documents through stages. $group groups documents by a field. $sum:1 counts each document. $sort orders the summary results.
+
+
+STEP 12 - LOOKUP (COMBINE RELATED COLLECTIONS)
+
+A. Get booking documents with matching user details
+
+db.bookings.aggregate([
+    {
+        $lookup: {
+            from: "users",
+            localField: "userId",
+            foreignField: "_id",
+            as: "userDetails"
+        }
+    }
+])
+
+B. Get booking documents with matching turf details
+
+db.bookings.aggregate([
+    {
+        $lookup: {
+            from: "turfs",
+            localField: "turfId",
+            foreignField: "_id",
+            as: "turfDetails"
+        }
+    }
+])
+
+Explanation:
+$lookup performs a left outer join with another collection. localField is the reference field in bookings. foreignField is the matching field in the other collection. as names the output array.
+
+
+STEP 13 - INDEXING AND QUERY PERFORMANCE
+
+A. Create a compound index on turf sport type and active status
+
+db.turfs.createIndex({
+    sportType: 1,
+    isActive: 1
+})
+
+B. Create a compound index on booking status and date
+
+db.bookings.createIndex({
+    status: 1,
+    bookingDate: 1
+})
+
+C. Create indexes for user and turf references
+
+db.bookings.createIndex({
+    userId: 1
+})
+
+db.bookings.createIndex({
+    turfId: 1
+})
+
+D. Verify indexes
+
+db.turfs.getIndexes()
+db.bookings.getIndexes()
+
+E. Analyze a booking query with execution statistics
+
+db.bookings.find({
+    status: "confirmed",
+    bookingDate: {
+        $gte: new Date("2026-11-01"),
+        $lt: new Date("2026-12-01")
+    }
+}).explain("executionStats")
+
+Important explain() output fields:
+- nReturned: number of documents returned.
+- totalDocsExamined: number of documents examined.
+- totalKeysExamined: number of index entries examined.
+- executionTimeMillis: execution time reported for the operation.
+- IXSCAN: an index scan is used.
+- COLLSCAN: a collection scan is used.
+
+Explanation:
+An index can help MongoDB find matching documents more efficiently. A compound index contains more than one field. explain("executionStats") shows how MongoDB executed the query. An index existing does not guarantee that every query will use it; check the actual execution plan.
+
+
+FINAL CHECK - VERIFY THE DATABASE
+
+show dbs
+show collections
+
+db.users.find()
+db.turfs.find()
+db.bookings.find()
+
+In MongoDB Compass, refresh the connection and expand:
+
+ turf_booking_db
+     users
+     turfs
+     bookings
+
+You can open each collection's Documents tab to show the stored documents visually.
+
+PRESENTATION ORDER
+1. Show turf_booking_db and the three collections.
+2. Open users and explain a user document.
+3. Open turfs and explain fields, arrays and embedded data.
+4. Open bookings and explain userId and turfId references.
+5. Demonstrate one insert, one find and one update.
+6. Show aggregation results.
+7. Show indexes and explain("executionStats").
+
+SAFETY REMINDER
+Only use the commands on a practice database or after confirming that the fields match your running application. Never expose the Atlas connection string or password. Do not run dropDatabase(), deleteMany({}) or delete/drop operations against real application data.

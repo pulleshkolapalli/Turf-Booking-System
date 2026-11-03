@@ -16,35 +16,42 @@ load_dotenv()
 # Fixed academic database name as specified in project report
 DATABASE_NAME = "turf_booking_db"
 
-# Cached client and database instances
+# Cached client, database, and initialization error instances
 _client = None
 _db = None
+_init_error = None
 
 
 def get_mongo_uri():
-    """Retrieve MongoDB URI from environment variables."""
-    return os.getenv("MONGO_URI", "").strip()
+    """Retrieve MongoDB URI from environment variables, stripping outer quotes if present."""
+    uri = os.getenv("MONGO_URI", "").strip()
+    if (uri.startswith('"') and uri.endswith('"')) or (uri.startswith("'") and uri.endswith("'")):
+        uri = uri[1:-1].strip()
+    return uri
 
 
 def get_client():
     """
     Creates or returns an existing PyMongo MongoClient.
-    Uses a 3-second server selection timeout to avoid long hangs when Atlas is unreachable.
+    Uses a 5-second server selection timeout suitable for cloud deployments.
     """
-    global _client
+    global _client, _init_error
     uri = get_mongo_uri()
     if not uri:
+        _init_error = "MONGO_URI environment variable is missing or empty."
         return None
 
     if _client is None:
         try:
             _client = MongoClient(
                 uri,
-                serverSelectionTimeoutMS=3000,
-                connectTimeoutMS=3000,
+                serverSelectionTimeoutMS=5000,
+                connectTimeoutMS=5000,
                 appName="TurfBookingSystem"
             )
-        except (ConfigurationError, PyMongoError) as err:
+            _init_error = None
+        except Exception as err:
+            _init_error = str(err)
             print(f"[Database Error] Failed to initialize MongoClient: {err}")
             return None
     return _client
@@ -69,20 +76,23 @@ def check_connection():
     Tests MongoDB Atlas connectivity by pinging the admin database.
     Returns (is_connected: bool, message: str).
     """
+    global _client
     uri = get_mongo_uri()
-    if not uri or "<username>" in uri or "<password>" in uri:
-        return False, "MONGO_URI is not configured in .env file. Please add your Atlas connection string."
+    if not uri:
+        return False, "MONGO_URI environment variable is not configured. Please set MONGO_URI in your Render environment."
+    if "<username>" in uri or "<password>" in uri:
+        return False, "MONGO_URI contains placeholder '<username>' or '<password>'. Please replace with your actual Atlas credentials."
 
     client = get_client()
     if client is None:
-        return False, "Could not initialize PyMongo MongoClient. Check URI format."
+        err_msg = _init_error or "Could not initialize PyMongo MongoClient. Check URI format."
+        return False, f"Could not initialize PyMongo MongoClient: {err_msg}"
 
     try:
-        # The ping command is cheap and does not require auth on admin DB in Atlas
         client.admin.command("ping")
         return True, "Successfully connected to MongoDB Atlas."
     except ConnectionFailure as err:
-        return False, f"Connection to MongoDB Atlas failed. Check internet access and Atlas IP Whitelist (0.0.0.0/0). Detail: {err}"
+        return False, f"Connection to MongoDB Atlas failed. Check Atlas IP Access List (allow 0.0.0.0/0) or cluster health. Detail: {err}"
     except Exception as err:
         return False, f"Database connection error: {err}"
 
