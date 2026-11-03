@@ -1,0 +1,110 @@
+{% extends "base.html" %}
+
+{% block title %}Explore Sports Turfs{% endblock %}
+
+{% block content %}
+<div class="card-header" style="border: none; padding-bottom: 0;">
+  <div>
+    <h2 style="font-size: 1.5rem; color: var(--primary-navy);">Sports Turfs Directory</h2>
+    <p style="color: var(--text-muted); font-size: 0.92rem;">
+      Browse available sports facilities stored in MongoDB <code>turfs</code> collection.
+    </p>
+  </div>
+  <a href="{{ url_for('add_turf') }}" class="btn btn-primary">+ Add New Turf</a>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <form method="GET" action="{{ url_for('list_turfs') }}">
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 200px;">
+      <label for="sport" style="font-size: 0.85rem; font-weight: 600; white-space: nowrap;">Sport:</label>
+      <select name="sport" id="sport" class="form-control" style="padding: 0.45rem 0.75rem;">
+        <option value="">All Sports</option>
+        {% for s in sports %}
+          <option value="{{ s }}" {% if selected_sport == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 0.5rem; flex: 1; min-width: 200px;">
+      <label for="city" style="font-size: 0.85rem; font-weight: 600; white-space: nowrap;">City:</label>
+      <input type="text" name="city" id="city" value="{{ selected_city }}" placeholder="Filter by city..." class="form-control" style="padding: 0.45rem 0.75rem;">
+    </div>
+
+    <button type="submit" class="btn btn-navy btn-sm">Filter</button>
+    {% if selected_sport or selected_city %}
+      <a href="{{ url_for('list_turfs') }}" class="btn btn-outline btn-sm">Reset</a>
+    {% endif %}
+  </form>
+</div>
+
+<!-- Turfs Grid -->
+{% if turfs %}
+  <div class="turf-grid">
+    {% for turf in turfs %}
+      <div class="turf-card">
+        <div class="turf-card-top">
+          <div>
+            <h3 class="turf-card-title">{{ turf.name }}</h3>
+            <span class="turf-card-location">📍 {{ turf.city }}</span>
+          </div>
+          <span class="badge-sport">{{ turf.sportType }}</span>
+        </div>
+
+        <div class="turf-card-body">
+          <div class="turf-price-box">
+            <span class="turf-price">₹{{ turf.hourlyRate }}</span>
+            <span class="turf-price-unit">/ hour</span>
+          </div>
+
+          <div>
+            <div style="font-size: 0.78rem; text-transform: uppercase; color: var(--text-muted); font-weight: 600; margin-bottom: 0.35rem;">
+              Amenities:
+            </div>
+            {% if turf.amenities %}
+              <div class="amenities-list">
+                {% for amenity in turf.amenities %}
+                  <span class="amenity-tag">{{ amenity }}</span>
+                {% endfor %}
+              </div>
+            {% else %}
+              <small style="color: var(--text-muted); font-style: italic;">No specific amenities listed</small>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="turf-card-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <div>
+            {% if turf.isActive %}
+              <span class="badge badge-active">Active</span>
+            {% else %}
+              <span class="badge badge-inactive">Inactive</span>
+            {% endif %}
+          </div>
+
+          <div style="display: flex; gap: 0.4rem; align-items: center;">
+            <a href="{{ url_for('edit_turf', turf_id=turf._id) }}" class="btn btn-outline btn-sm" title="Edit Turf Details">✏️ Edit</a>
+            {% if turf.isActive %}
+              <a href="{{ url_for('book_turf', turf_id=turf._id) }}" class="btn btn-primary btn-sm">Book</a>
+            {% else %}
+              <button class="btn btn-outline btn-sm" disabled style="opacity: 0.6; cursor: not-allowed;">Unavailable</button>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="empty-state">
+    <h3>No Turfs Found</h3>
+    <p>There are no turf facilities matching your filter or no turfs have been added yet.</p>
+    <div style="display: flex; gap: 0.5rem; justify-content: center;">
+      {% if selected_sport or selected_city %}
+        <a href="{{ url_for('list_turfs') }}" class="btn btn-outline">Clear Filters</a>
+      {% endif %}
+      <a href="{{ url_for('add_turf') }}" class="btn btn-primary">+ Add First Turf</a>
+    </div>
+  </div>
+{% endif %}
+{% endblock %}
+

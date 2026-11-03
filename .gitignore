@@ -1,0 +1,27 @@
+# Environment secrets (NEVER commit your MongoDB connection URI)
+.env
+
+# Python Virtual Environment
+.venv/
+env/
+venv/
+ENV/
+
+# Python Cache & Bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Instance & OS files
+instance/
+.pytest_cache/
+.DS_Store
+Thumbs.db
+
+# IDE & Editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+

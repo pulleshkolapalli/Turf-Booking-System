@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}Add User{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Register Demo User</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          Inserts a new profile document into the MongoDB <code>users</code> collection.
+        </p>
+      </div>
+      <a href="{{ url_for('list_users') }}" class="btn btn-outline btn-sm">&larr; Back to Users</a>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_user') }}">
+      <div class="form-group">
+        <label for="name">Full Name *</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Aman Deep" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address *</label>
+        <input type="email" id="email" name="email" class="form-control" placeholder="e.g. aman@example.com" required>
+        <span class="form-hint">Enforced as unique via a MongoDB index on <code>email</code>.</span>
+      </div>
+
+      <div class="form-group">
+        <label for="role">Role *</label>
+        <select id="role" name="role" class="form-control" required>
+          <option value="user" selected>Customer (user)</option>
+          <option value="admin">Turf Administrator (admin)</option>
+        </select>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Create User in MongoDB</button>
+        <a href="{{ url_for('list_users') }}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

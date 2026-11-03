@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Turf Booking Management System{% endblock %} | CSE494</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="navbar-container">
+      <a href="{{ url_for('index') }}" class="brand">
+        <div class="brand-icon">⚽</div>
+        <div class="brand-text">
+          <h1>Turf Booking System</h1>
+          <span>CSE494 &bull; Intelligent NoSQL Databases</span>
+        </div>
+      </a>
+
+      <nav>
+        <ul class="nav-links">
+          <li><a href="{{ url_for('index') }}">Dashboard</a></li>
+          <li><a href="{{ url_for('list_turfs') }}">View Turfs</a></li>
+          <li><a href="{{ url_for('add_turf') }}">+ Add Turf</a></li>
+          <li><a href="{{ url_for('list_users') }}">Users</a></li>
+          <li><a href="{{ url_for('list_bookings') }}">Manage Bookings</a></li>
+          <li><a href="{{ url_for('book_turf') }}" class="btn-book-nav">Book Now</a></li>
+        </ul>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Area -->
+  <main class="main-container">
+
+    <!-- Flash Notifications -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-messages">
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              <span>{{ message }}</span>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
+    {% block content %}
+    <!-- Child template content will be rendered here -->
+    {% endblock %}
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <p><strong>Turf Booking Management System</strong> &bull; CSE494 CA2 Practical Demonstration</p>
+    <p style="margin-top: 0.35rem; font-size: 0.78rem; color: #94a3b8;">
+      Tech Stack: Python 3 &bull; Flask &bull; PyMongo &bull; MongoDB Atlas &bull; MongoDB Compass
+    </p>
+  </footer>
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>
+

@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Add New Turf{% endblock %}
+
+{% block content %}
+<div style="max-width: 700px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Add New Sports Turf</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          Inserts a new facility document into the MongoDB <code>turfs</code> collection.
+        </p>
+      </div>
+      <a href="{{ url_for('list_turfs') }}" class="btn btn-outline btn-sm">&larr; Back to Turfs</a>
+    </div>
+
+    <form method="POST" action="{{ url_for('add_turf') }}">
+      <div class="form-group">
+        <label for="name">Turf Name *</label>
+        <input type="text" id="name" name="name" class="form-control" placeholder="e.g. Green Arena Sports Hub" required>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="city">City *</label>
+          <input type="text" id="city" name="city" class="form-control" placeholder="e.g. Phagwara, Jalandhar, etc." required>
+        </div>
+
+        <div class="form-group">
+          <label for="sportType">Sport Type *</label>
+          <select id="sportType" name="sportType" class="form-control" required>
+            <option value="">-- Select Sport --</option>
+            <option value="Football">Football</option>
+            <option value="Cricket">Cricket</option>
+            <option value="Badminton">Badminton</option>
+            <option value="Tennis">Tennis</option>
+            <option value="Basketball">Basketball</option>
+            <option value="Multi-Sport">Multi-Sport</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="amenities">Amenities (Comma-separated)</label>
+        <input type="text" id="amenities" name="amenities" class="form-control" placeholder="e.g. Parking, Washroom, Floodlights, Drinking Water">
+        <span class="form-hint">Stored as an embedded array of strings in MongoDB: <code>["Parking", "Washroom"]</code></span>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="hourlyRate">Hourly Rate (₹) *</label>
+          <input type="number" id="hourlyRate" name="hourlyRate" step="50" min="100" class="form-control" placeholder="e.g. 1200" required>
+          <span class="form-hint">Price charged per hour for this turf</span>
+        </div>
+
+        <div class="form-group">
+          <label for="ownerId">Demo Owner (User Reference)</label>
+          <select id="ownerId" name="ownerId" class="form-control">
+            {% if users %}
+              {% for u in users %}
+                <option value="{{ u._id }}">{{ u.name }} ({{ u.role }}) - {{ u.email }}</option>
+              {% endfor %}
+            {% else %}
+              <option value="">Default Admin (will auto-assign)</option>
+            {% endif %}
+          </select>
+          <span class="form-hint">Stored as <code>ownerId: ObjectId</code> reference to <code>users</code></span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <div class="checkbox-group">
+          <input type="checkbox" id="isActive" name="isActive" value="true" checked>
+          <label for="isActive" style="cursor: pointer; margin-bottom: 0;">Is Active & Available for Booking</label>
+        </div>
+        <span class="form-hint" style="margin-left: 28px;">Indexed along with sportType for fast search</span>
+      </div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1.5rem;">
+        <button type="submit" class="btn btn-primary" style="flex: 1;">Save Turf to MongoDB</button>
+        <a href="{{ url_for('list_turfs') }}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+

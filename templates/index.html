@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<!-- Project Overview Hero -->
+<div class="hero-banner">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem;">
+    <div>
+      <h2>Turf Booking Management System</h2>
+      <p>
+        An individual academic mini-project for <strong>CSE494 &ndash; Intelligent NoSQL Databases</strong>.
+        Demonstrating document storage, schema referencing, server-side validation, and real PyMongo CRUD operations
+        connected directly to <strong>MongoDB Atlas</strong> and inspectable in <strong>MongoDB Compass</strong>.
+      </p>
+    </div>
+    
+    <div>
+      {% if connected %}
+        <div class="status-pill status-connected">
+          <span class="status-dot"></span>
+          <span>Atlas Connected: {{ database_name }}</span>
+        </div>
+      {% else %}
+        <div class="status-pill status-disconnected">
+          <span class="status-dot"></span>
+          <span>Atlas Disconnected</span>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Database Connection Notice if not connected -->
+{% if not connected %}
+<div class="card" style="border-left: 4px solid var(--warning); background-color: #fffbeb;">
+  <h3 style="color: #92400e; margin-bottom: 0.5rem;">⚠️ MongoDB Atlas Connection Required</h3>
+  <p style="font-size: 0.92rem; color: #78350f; margin-bottom: 0.75rem;">
+    {{ conn_msg }}
+  </p>
+  <div style="background-color: #ffffff; padding: 0.85rem 1rem; border-radius: 6px; font-size: 0.88rem; border: 1px solid #fde68a;">
+    <strong>Quick Setup Steps:</strong>
+    <ol style="margin-left: 1.5rem; margin-top: 0.4rem; line-height: 1.5;">
+      <li>Copy <code>.env.example</code> to <code>.env</code> in your project directory.</li>
+      <li>Set <code>MONGO_URI</code> to your MongoDB Atlas cluster connection string.</li>
+      <li>Whitelist your IP in Atlas under <strong>Network Access</strong> (or allow <code>0.0.0.0/0</code> for demo).</li>
+      <li>Run <code>python seed_data.py</code> to load initial demo records.</li>
+      <li>Refresh this page to see live MongoDB metrics!</li>
+    </ol>
+  </div>
+</div>
+{% endif %}
+
+<!-- Live MongoDB Metric Cards -->
+<div class="stats-grid">
+  <div class="stat-card">
+    <span class="stat-label">Total Turfs</span>
+    <span class="stat-value">{{ stats.turfs }}</span>
+    <span class="stat-subtext">{{ stats.active_turfs }} active for booking</span>
+  </div>
+
+  <div class="stat-card">
+    <span class="stat-label">Registered Users</span>
+    <span class="stat-value">{{ stats.users }}</span>
+    <span class="stat-subtext">Demo users & admins</span>
+  </div>
+
+  <div class="stat-card">
+    <span class="stat-label">Total Bookings</span>
+    <span class="stat-value">{{ stats.bookings }}</span>
+    <span class="stat-subtext">{{ stats.confirmed_bookings }} confirmed</span>
+  </div>
+
+  <div class="stat-card">
+    <span class="stat-label">Pending Requests</span>
+    <span class="stat-value" style="color: var(--warning);">{{ stats.pending_bookings }}</span>
+    <span class="stat-subtext">Awaiting admin review</span>
+  </div>
+</div>
+
+<!-- Quick Action Buttons -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Quick Actions</h3>
+    <span style="font-size: 0.85rem; color: var(--text-muted);">Common demo operations</span>
+  </div>
+  <div class="quick-actions">
+    <a href="{{ url_for('list_turfs') }}" class="btn btn-navy">🏟️ Browse Turfs</a>
+    <a href="{{ url_for('add_turf') }}" class="btn btn-primary">+ Add New Turf</a>
+    <a href="{{ url_for('book_turf') }}" class="btn btn-primary">📅 Book a Turf</a>
+    <a href="{{ url_for('list_bookings') }}" class="btn btn-navy">📋 View All Bookings</a>
+    <a href="{{ url_for('add_user') }}" class="btn btn-outline">+ Add Demo User</a>
+  </div>
+</div>
+
+<!-- Recent Bookings Table -->
+<div class="card">
+  <div class="card-header">
+    <h3 class="card-title">Recent Booking Transactions</h3>
+    <a href="{{ url_for('list_bookings') }}" class="btn btn-outline btn-sm">View All &rarr;</a>
+  </div>
+
+  {% if recent_bookings %}
+    <div class="table-responsive">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Booking Ref</th>
+            <th>Customer</th>
+            <th>Turf</th>
+            <th>Date & Time</th>
+            <th>Amount</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for b in recent_bookings %}
+            <tr>
+              <td><code>{{ b.demoCode }}</code></td>
+              <td><strong>{{ b.userName }}</strong></td>
+              <td>{{ b.turfName }}</td>
+              <td>
+                {{ b.bookingDate.strftime('%d %b %Y') if b.bookingDate else 'N/A' }}
+                <br>
+                <small style="color: var(--text-muted);">{{ b.timeSlot }}</small>
+              </td>
+              <td><strong>₹{{ "%.2f"|format(b.amount) }}</strong></td>
+              <td>
+                <span class="badge badge-{{ b.status }}">{{ b.status }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="empty-state">
+      <p>No bookings found yet. Seed demo data or create a booking using the buttons above.</p>
+      <a href="{{ url_for('book_turf') }}" class="btn btn-primary btn-sm">Book First Turf</a>
+    </div>
+  {% endif %}
+</div>
+
+<!-- Live MongoDB Aggregation Insights (CSE494 Viva Requirement) -->
+<div class="card">
+  <div class="card-header">
+    <div>
+      <h3 class="card-title">MongoDB Aggregation Pipeline Insights</h3>
+      <span style="font-size: 0.85rem; color: var(--text-muted);">Real-time results from <code>db.bookings.aggregate([ ... ])</code></span>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.25rem;">
+    <!-- Pipeline 1: Status Aggregation -->
+    <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; background-color: #ffffff;">
+      <h4 style="font-size: 0.92rem; color: var(--primary-navy); margin-bottom: 0.6rem;">
+        📊 Aggregation 1: Group by <code>$status</code>
+      </h4>
+      <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+        Pipeline: <code>[ { $group: { _id: "$status", totalCount: { $sum: 1 }, totalAmount: { $sum: "$amount" } } } ]</code>
+      </div>
+      {% if status_aggregation %}
+        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-muted);">
+              <th style="padding: 0.35rem 0;">Status</th>
+              <th style="padding: 0.35rem 0; text-align: center;">Count</th>
+              <th style="padding: 0.35rem 0; text-align: right;">Total Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for sa in status_aggregation %}
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.4rem 0;"><span class="badge badge-{{ sa._id }}">{{ sa._id }}</span></td>
+                <td style="padding: 0.4rem 0; text-align: center; font-weight: 700;">{{ sa.totalCount }}</td>
+                <td style="padding: 0.4rem 0; text-align: right; color: var(--turf-green); font-weight: 700;">₹{{ "%.2f"|format(sa.totalAmount) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="font-size: 0.85rem; color: var(--text-muted);">No booking records aggregated yet.</p>
+      {% endif %}
+    </div>
+
+    <!-- Pipeline 2: Turf Facility Revenue Aggregation -->
+    <div style="border: 1px solid var(--border-color); border-radius: 8px; padding: 1rem; background-color: #ffffff;">
+      <h4 style="font-size: 0.92rem; color: var(--primary-navy); margin-bottom: 0.6rem;">
+        🏟️ Aggregation 2: Bookings & Revenue by Turf
+      </h4>
+      <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.6rem;">
+        Pipeline: <code>[ { $group: { _id: "$turfId", count: { $sum: 1 }, revenue: { $sum: "$amount" } } } ]</code>
+      </div>
+      {% if turf_aggregation %}
+        <table style="width: 100%; font-size: 0.85rem; border-collapse: collapse;">
+          <thead>
+            <tr style="border-bottom: 1px solid var(--border-color); text-align: left; color: var(--text-muted);">
+              <th style="padding: 0.35rem 0;">Turf Venue</th>
+              <th style="padding: 0.35rem 0; text-align: center;">Bookings</th>
+              <th style="padding: 0.35rem 0; text-align: right;">Revenue</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for ta in turf_aggregation %}
+              <tr style="border-bottom: 1px solid #f1f5f9;">
+                <td style="padding: 0.4rem 0;"><strong>{{ ta.turfName }}</strong> <small style="color: var(--text-muted);">({{ ta.sportType }})</small></td>
+                <td style="padding: 0.4rem 0; text-align: center; font-weight: 700;">{{ ta.bookingCount }}</td>
+                <td style="padding: 0.4rem 0; text-align: right; color: var(--turf-green); font-weight: 700;">₹{{ "%.2f"|format(ta.revenue) }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p style="font-size: 0.85rem; color: var(--text-muted);">No turf booking records aggregated yet.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<!-- Academic NoSQL Concept Reference (Helpful for Viva) -->
+<div class="card" style="background-color: #f8fafc;">
+  <div class="card-header">
+    <h3 class="card-title" style="font-size: 1.05rem;">🎓 CSE494 Viva Quick Reference &bull; NoSQL Concepts Used</h3>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1rem; font-size: 0.88rem;">
+    <div>
+      <strong>1. Embedding</strong>
+      <p style="color: var(--text-muted); margin-top: 0.2rem;">
+        <code>amenities: ["Parking", "Washroom"]</code> embedded inside <code>turfs</code> documents because they are always read with the facility.
+      </p>
+    </div>
+    <div>
+      <strong>2. Referencing</strong>
+      <p style="color: var(--text-muted); margin-top: 0.2rem;">
+        <code>bookings.userId</code> &rarr; <code>users._id</code> and <code>bookings.turfId</code> &rarr; <code>turfs._id</code> maintain independent lifecycles.
+      </p>
+    </div>
+    <div>
+      <strong>3. Indexing</strong>
+      <p style="color: var(--text-muted); margin-top: 0.2rem;">
+        Compound index on <code>(sportType, isActive)</code> and unique index on <code>email</code> accelerate queries and enforce uniqueness.
+      </p>
+    </div>
+    <div>
+      <strong>4. Compass Verification</strong>
+      <p style="color: var(--text-muted); margin-top: 0.2rem;">
+        Form submissions insert real BSON documents in Atlas, directly viewable in MongoDB Compass under <code>turf_booking_db</code>.
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+

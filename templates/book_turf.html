@@ -1,0 +1,150 @@
+{% extends "base.html" %}
+
+{% block title %}Book a Sports Turf{% endblock %}
+
+{% block content %}
+<div style="max-width: 720px; margin: 0 auto;">
+  <div class="card">
+    <div class="card-header">
+      <div>
+        <h2 class="card-title">Book a Sports Turf</h2>
+        <p style="font-size: 0.88rem; color: var(--text-muted);">
+          Creates a new reservation document referencing <code>userId</code> and <code>turfId</code>.
+        </p>
+      </div>
+      <a href="{{ url_for('list_bookings') }}" class="btn btn-outline btn-sm">&larr; View Bookings</a>
+    </div>
+
+    {% if not turfs %}
+      <div class="empty-state" style="padding: 2rem 1rem;">
+        <h3>No Active Turfs Available</h3>
+        <p>You must add at least one active sports turf before creating a booking.</p>
+        <a href="{{ url_for('add_turf') }}" class="btn btn-primary">+ Add New Turf</a>
+      </div>
+    {% elif not users %}
+      <div class="empty-state" style="padding: 2rem 1rem;">
+        <h3>No Users Available</h3>
+        <p>You must register at least one user before submitting a booking.</p>
+        <a href="{{ url_for('add_user') }}" class="btn btn-primary">+ Add Demo User</a>
+      </div>
+    {% else %}
+      <form method="POST" action="{{ url_for('book_turf') }}" id="bookingForm">
+        
+        <div class="form-grid">
+          <!-- Select User -->
+          <div class="form-group">
+            <label for="userId">Customer Profile *</label>
+            <select id="userId" name="userId" class="form-control" required>
+              <option value="">-- Choose User --</option>
+              {% for u in users %}
+                <option value="{{ u._id }}">{{ u.name }} ({{ u.email }})</option>
+              {% endfor %}
+            </select>
+            <span class="form-hint">Stored as <code>userId: ObjectId</code> reference</span>
+          </div>
+
+          <!-- Select Turf -->
+          <div class="form-group">
+            <label for="turfId">Sports Facility *</label>
+            <select id="turfId" name="turfId" class="form-control" required onchange="updateEstimatedPrice()">
+              <option value="" data-rate="0">-- Choose Turf --</option>
+              {% for t in turfs %}
+                <option value="{{ t._id }}" data-rate="{{ t.hourlyRate }}"
+                  {% if preselected_turf_id and preselected_turf_id == (t._id|string) %}selected{% endif %}>
+                  {{ t.name }} ({{ t.sportType }}) &ndash; ₹{{ t.hourlyRate }}/hr
+                </option>
+              {% endfor %}
+            </select>
+            <span class="form-hint">Stored as <code>turfId: ObjectId</code> reference</span>
+          </div>
+        </div>
+
+        <!-- Date Selection -->
+        <div class="form-group">
+          <label for="bookingDate">Reservation Date *</label>
+          <input type="date" id="bookingDate" name="bookingDate" min="{{ today_date }}" class="form-control" required>
+          <span class="form-hint">Stored as BSON Date at midnight UTC</span>
+        </div>
+
+        <!-- Time Slots -->
+        <div class="form-grid">
+          <div class="form-group">
+            <label for="startTime">Start Time (HH:MM) *</label>
+            <input type="time" id="startTime" name="startTime" class="form-control" required onchange="updateEstimatedPrice()">
+          </div>
+
+          <div class="form-group">
+            <label for="endTime">End Time (HH:MM) *</label>
+            <input type="time" id="endTime" name="endTime" class="form-control" required onchange="updateEstimatedPrice()">
+            <span class="form-hint">Must be later than start time</span>
+          </div>
+        </div>
+
+        <!-- Dynamic Fee Preview Box -->
+        <div style="background-color: var(--turf-light); border: 1px solid #a7f3d0; border-radius: 8px; padding: 1rem 1.25rem; margin: 1.25rem 0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <span style="font-size: 0.8rem; text-transform: uppercase; color: #065f46; font-weight: 700; letter-spacing: 0.5px;">Estimated Total Amount</span>
+            <div style="font-size: 1.6rem; font-weight: 800; color: var(--turf-green);" id="estPriceDisplay">₹0.00</div>
+            <span style="font-size: 0.78rem; color: #047857;" id="estDurationDisplay">Select turf and times to preview total</span>
+          </div>
+          <div style="text-align: right; font-size: 0.78rem; color: #047857;">
+            <span>Initial Status: <strong>pending</strong></span><br>
+            <span>Verified server-side via PyMongo</span>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 0.75rem;">
+          <button type="submit" class="btn btn-primary" style="flex: 1;">Submit Booking Request</button>
+          <a href="{{ url_for('list_bookings') }}" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function updateEstimatedPrice() {
+    const turfSelect = document.getElementById('turfId');
+    const startTimeInput = document.getElementById('startTime');
+    const endTimeInput = document.getElementById('endTime');
+    const priceDisplay = document.getElementById('estPriceDisplay');
+    const durationDisplay = document.getElementById('estDurationDisplay');
+
+    if (!turfSelect || !startTimeInput || !endTimeInput) return;
+
+    const selectedOption = turfSelect.options[turfSelect.selectedIndex];
+    const rate = parseFloat(selectedOption ? selectedOption.getAttribute('data-rate') : 0) || 0;
+    const start = startTimeInput.value;
+    const end = endTimeInput.value;
+
+    if (!start || !end || rate <= 0) {
+      priceDisplay.textContent = '₹0.00';
+      durationDisplay.textContent = 'Select turf and times to preview total';
+      return;
+    }
+
+    const startParts = start.split(':').map(Number);
+    const endParts = end.split(':').map(Number);
+    const startMins = startParts[0] * 60 + startParts[1];
+    const endMins = endParts[0] * 60 + endParts[1];
+
+    const diffMins = endMins - startMins;
+    if (diffMins <= 0) {
+      priceDisplay.textContent = '₹0.00';
+      durationDisplay.textContent = '⚠️ End time must be later than start time';
+      return;
+    }
+
+    const hours = diffMins / 60.0;
+    const total = (hours * rate).toFixed(2);
+    priceDisplay.textContent = '₹' + total;
+    durationDisplay.textContent = hours.toFixed(1) + ' hrs @ ₹' + rate + '/hr';
+  }
+
+  // Run on load in case preselected
+  window.addEventListener('DOMContentLoaded', updateEstimatedPrice);
+</script>
+{% endblock %}
+
