@@ -12,10 +12,14 @@ Users can browse available sports turfs (by sport, city, amenities, and hourly p
 
 ### Key Highlights
 - **Real Database CRUD**: Direct PyMongo integration with MongoDB Atlas (no fake localStorage or mocked data).
+- **Full Facility Management**: Add, View, Edit, and safely Delete sports turfs with active booking checks.
 - **Relational Referencing in NoSQL**: `bookings` documents link to `users._id` and `turfs._id` using BSON `ObjectId`.
 - **Embedded Document Data**: `amenities` are embedded directly inside `turfs` as an array of strings.
 - **Server-Side Validation**: Checks required fields, valid positive hourly rates, non-overlapping time intervals, and ensures end time is after start time.
+- **Dynamic Search & Filtering**: Filter turfs by sport/city and filter bookings by status, turf venue, date, and keyword search.
+- **Live Aggregation Insights**: Real-time MongoDB `$group` aggregation pipeline calculations displayed directly on the dashboard.
 - **Academic Viva Ready**: Includes `compass_demo_commands.js` to execute and explain queries, aggregations (`$group`, `$lookup`), and indexing (`explain("executionStats")`).
+- **Production & Cloud Deployable**: Pre-configured with `render.yaml`, `Procfile`, and `gunicorn` for hosting on Render.
 
 ---
 
@@ -193,6 +197,30 @@ During your viva or class presentation, use MongoDB Compass alongside the web ap
      - Aggregation with `$group` to calculate total revenue per booking status
      - `$lookup` to join bookings with user and turf documents
      - Query execution plan using `.explain("executionStats")`
+
+---
+
+## 🌐 Online Deployment Guide (Render)
+
+This project includes production configuration (`render.yaml`, `Procfile`, and `gunicorn`) to deploy live on [Render](https://render.com):
+
+1. **Push Repository to GitHub**:
+   Ensure your code is pushed to your GitHub repository `https://github.com/pullrd/Turf-Booking-System`.
+2. **Create Web Service on Render**:
+   - Log in to your Render Dashboard.
+   - Click **New +** &rarr; **Web Service**.
+   - Select your GitHub repository **`Turf-Booking-System`**.
+3. **Configure Build & Start**:
+   - **Environment**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt`
+   - **Start Command**: `gunicorn app:app`
+4. **Set Production Environment Variables**:
+   Under the **Environment** tab on Render, add:
+   - `MONGO_URI`: Your MongoDB Atlas cluster connection string.
+   - `SECRET_KEY`: A secure random secret key (e.g., `cse494-turf-booking-secret-key-2026`).
+   - `PYTHON_VERSION`: `3.11.9` or `3.14.0`
+5. **Deploy**:
+   Click **Create Web Service**. Render will install packages and launch the app at your assigned public HTTPS URL (e.g., `https://turf-booking-system.onrender.com`).
 
 ---
 
